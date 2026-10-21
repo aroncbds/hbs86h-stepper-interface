@@ -1,0 +1,46 @@
+{
+  "name": "AVR ATmega2560",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+  // Host /dev stays at /dev/host-dev so the container's own pts and null
+  // devices are left alone. The cgroup rules allow opening the nodes.
+  //   166 ttyACM (16U2), 188 ttyUSB (CH340), 189 USB bus (AVR Dragon)
+  // --device=/dev/ttyUSB0 is not used: Docker refuses to start when that
+  // node is missing. A dangling link is harmless; plugging the board in
+  // later makes it appear on the host mount.
+  "runArgs": [
+    "--device-cgroup-rule=c 166:* rmw",
+    "--device-cgroup-rule=c 188:* rmw",
+    "--device-cgroup-rule=c 189:* rmw"
+  ],
+  "mounts": [
+    "source=/dev,target=/dev/host-dev,type=bind"
+  ],
+  "postStartCommand": "sh .devcontainer/host-dev-links.sh",
+  "postCreateCommand": "make all",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-vscode.makefile-tools"
+      ],
+      "settings": {
+        "C_Cpp.intelliSenseEngine": "default",
+        "C_Cpp.intelliSenseEngineFallback": "enabled",
+        "C_Cpp.autocomplete": "default",
+        "C_Cpp.errorSquiggles": "enabled",
+        "C_Cpp.default.compileCommands": "${workspaceFolder}/compile_commands.json",
+        "C_Cpp.default.compilerPath": "/usr/bin/avr-gcc",
+        "C_Cpp.default.cStandard": "c99",
+        "C_Cpp.default.intelliSenseMode": "gcc-x64",
+        "C_Cpp.default.compilerArgs": [
+          "-mmcu=atmega2560",
+          "-std=c99"
+        ]
+      }
+    }
+  }
+}

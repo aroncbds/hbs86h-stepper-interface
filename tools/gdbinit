@@ -1,0 +1,5 @@
+set pagination off
+set confirm off
+set remote hardware-breakpoint-limit 4
+set remote hardware-watchpoint-limit 2
+target remote :4242

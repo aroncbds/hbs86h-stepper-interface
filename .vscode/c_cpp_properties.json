@@ -1,0 +1,41 @@
+{
+  "configurations": [
+    {
+      "name": "ATmega2560",
+      "compileCommands": "${workspaceFolder}/compile_commands.json",
+      "compilerPath": "/usr/bin/avr-gcc",
+      "compilerArgs": ["-mmcu=atmega2560", "-std=c99"],
+      "cStandard": "c99",
+      "intelliSenseMode": "gcc-x64",
+      "includePath": [
+        "${workspaceFolder}/include",
+        "${workspaceFolder}/third_party/FreeRTOS-Kernel/include",
+        "${workspaceFolder}/third_party/FreeRTOS-Kernel/portable/ThirdParty/GCC/ATmega",
+        "/usr/lib/avr/include",
+        "/usr/lib/gcc/avr/5.4.0/include"
+      ],
+      "browse": {
+        "path": [
+          "${workspaceFolder}",
+          "/usr/lib/avr/include",
+          "/usr/lib/gcc/avr/5.4.0/include"
+        ],
+        "limitSymbolsToIncludedHeaders": true,
+        "databaseFilename": "${workspaceFolder}/.vscode/.browse.VC.db"
+      },
+      "defines": [
+        "F_CPU=16000000UL",
+        "__AVR_ATmega2560__",
+        "configTOTAL_HEAP_SIZE=4096",
+        "BOARD_HAS_LED=1",
+        "BOARD_LED_DDR=DDRB",
+        "BOARD_LED_PORT=PORTB",
+        "BOARD_LED_PIN=PINB",
+        "BOARD_LED_BIT=PB7",
+        "BOARD_USART_BAUD=115200UL",
+        "BOARD_NAME=\"Arduino Mega 2560\""
+      ]
+    }
+  ],
+  "version": 4
+}

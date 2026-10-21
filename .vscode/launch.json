@@ -1,0 +1,29 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "AVR Dragon JTAG",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/stepper-interface.elf",
+      "cwd": "${workspaceFolder}",
+      "MIMode": "gdb",
+      "miDebuggerPath": "/usr/bin/avr-gdb",
+      "miDebuggerServerAddress": "localhost:4242",
+      "setupCommands": [
+        {
+          "text": "set remote hardware-breakpoint-limit 4"
+        },
+        {
+          "text": "set remote hardware-watchpoint-limit 2"
+        },
+        {
+          "text": "set pagination off"
+        },
+        {
+          "text": "break main"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+# AVR Dragon (Atmel/Microchip vendor 03eb, product 2107).
+# Install on the Linux machine that owns the USB device:
+#   sudo cp tools/99-avr-dragon.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload
+#   sudo udevadm trigger
+SUBSYSTEM=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2107", MODE="0660", GROUP="plugdev", TAG+="uaccess"

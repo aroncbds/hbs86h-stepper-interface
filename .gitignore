@@ -1,0 +1,12 @@
+build/
+compile_commands.json
+*.o
+*.d
+*.elf
+*.hex
+*.map
+*.lss
+*.eep
+.cache/
+.vscode/.browse.VC.db*
+*.swp
