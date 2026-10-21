@@ -1,1 +1,1 @@
-# AVR-based interface for HBS86H stepper driver firmware
+# Firmware for AVR-based HBS86H stepper driver
