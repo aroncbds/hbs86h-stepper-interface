@@ -126,8 +126,10 @@ $(LSS): $(ELF)
 
 blink: compile-commands $(BLINK_HEX)
 
-compile-commands:
-	@mkdir -p '$(BUILD)'
+$(BUILD):
+	@mkdir -p $@
+
+compile-commands: | $(BUILD)
 	$(file >$(BUILD)/.app-cflags,$(APP_CFLAGS))
 	$(file >$(BUILD)/.kernel-cflags,$(KERNEL_CFLAGS))
 	$(file >$(BUILD)/.app-files,$(APP_CFLAGS_SRC))
