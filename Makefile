@@ -46,6 +46,7 @@ endif
 APP_SRC := \
 	src/main.c \
 	src/console.c \
+	src/console_commands.c \
 	src/led.c \
 	src/hooks.c \
 	src/motion_controller.c
