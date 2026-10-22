@@ -47,7 +47,9 @@ APP_SRC := \
 	src/main.c \
 	src/console.c \
 	src/led.c \
-	src/hooks.c
+	src/hooks.c \
+	src/motion_controller.c
+	
 
 # Bare-metal LED blink. Separate image so it does not pull in FreeRTOS.
 BLINK_SRC := \
