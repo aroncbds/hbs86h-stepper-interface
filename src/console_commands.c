@@ -53,6 +53,7 @@ static bool parse_i32(const char *text, int32_t *result)
     return true;
 }
 
+
 static void send_event(
     console_commands_t *console,
     motion_event_t event,
@@ -63,16 +64,56 @@ static void send_event(
         .value = value
     };
 
-    motion_command_t command =
-        motion_controller_process(console->controller, message);
+    motion_response_t response =
+        motion_controller_process_ex(
+            console->controller,
+            message
+        );
 
-    console_write("State: ");
+    console_write("\nEVENT: ");
+    console_write(motion_event_name(event));
+    console_write("\n");
+
+    switch (response.result) {
+
+    case MOTION_RESULT_ACCEPTED:
+        console_write("RESULT: ACCEPTED\n");
+        break;
+
+    case MOTION_RESULT_REJECTED:
+        console_write("RESULT: REJECTED\n");
+        console_write("REASON: ");
+        console_write(motion_reason_name(response.reason));
+        console_write("\n");
+        break;
+
+    case MOTION_RESULT_IGNORED:
+        console_write("RESULT: IGNORED\n");
+        console_write("REASON: ");
+        console_write(motion_reason_name(response.reason));
+        console_write("\n");
+        break;
+    }
+
+    console_write("STATE: ");
     console_write(
-        motion_controller_state_name(console->controller->state)
+        motion_controller_state_name(
+            response.previous_state
+        )
     );
 
-    console_write("\nAction: ");
-    console_write_u16((uint16_t)command.type);
+    console_write(" -> ");
+
+    console_write(
+        motion_controller_state_name(
+            response.current_state
+        )
+    );
+
+    console_write("\nACTION: ");
+    console_write(
+        motion_action_name(response.command.type)
+    );
 
     console_write("\n");
 }

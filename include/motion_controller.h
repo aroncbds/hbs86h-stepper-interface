@@ -83,4 +83,35 @@ const char *motion_controller_state_name(
     motion_state_t state
 );
 
+
+typedef enum {
+    MOTION_RESULT_ACCEPTED = 0,
+    MOTION_RESULT_REJECTED,
+    MOTION_RESULT_IGNORED
+} motion_result_t;
+
+typedef enum {
+    MOTION_REASON_NONE = 0,
+    MOTION_REASON_INVALID_STATE,
+    MOTION_REASON_NOT_HOMED,
+    MOTION_REASON_ALREADY_IN_STATE
+} motion_reason_t;
+
+typedef struct {
+    motion_result_t result;
+    motion_reason_t reason;
+    motion_state_t previous_state;
+    motion_state_t current_state;
+    motion_command_t command;
+} motion_response_t;
+
+motion_response_t motion_controller_process_ex(
+    motion_controller_t *controller,
+    motion_message_t message
+);
+
+const char *motion_event_name(motion_event_t event);
+const char *motion_action_name(motion_action_t action);
+const char *motion_reason_name(motion_reason_t reason);
+
 #endif /* MOTION_CONTROLLER_H */

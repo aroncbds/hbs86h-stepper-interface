@@ -181,3 +181,109 @@ const char *motion_controller_state_name(
     default:                        return "UNKNOWN";
     }
 }
+
+
+motion_response_t motion_controller_process_ex(
+    motion_controller_t *controller,
+    motion_message_t message)
+{
+    motion_response_t response = {
+        .result = MOTION_RESULT_REJECTED,
+        .reason = MOTION_REASON_INVALID_STATE,
+        .previous_state = MOTION_STATE_FAULT,
+        .current_state = MOTION_STATE_FAULT,
+        .command = { MOTION_ACTION_NONE, 0 }
+    };
+
+    if (controller == NULL) {
+        response.command.type = MOTION_ACTION_FAULT;
+        return response;
+    }
+
+    response.previous_state = controller->state;
+
+    /*
+     * Existing state machine remains the single authority
+     * for transitions and commands.
+     */
+    response.command =
+        motion_controller_process(controller, message);
+
+    response.current_state = controller->state;
+
+    if (response.command.type != MOTION_ACTION_NONE ||
+        response.previous_state != response.current_state) {
+
+        response.result = MOTION_RESULT_ACCEPTED;
+        response.reason = MOTION_REASON_NONE;
+
+    } else if (
+        message.type == MOTION_EVENT_MOVE_ABSOLUTE &&
+        !controller->position_valid) {
+
+        response.result = MOTION_RESULT_REJECTED;
+        response.reason = MOTION_REASON_NOT_HOMED;
+
+    } else if (
+        message.type == MOTION_EVENT_INIT_OK &&
+        controller->state == MOTION_STATE_NOT_HOMED) {
+
+        response.result = MOTION_RESULT_IGNORED;
+        response.reason = MOTION_REASON_ALREADY_IN_STATE;
+
+    } else if (
+        message.type == MOTION_EVENT_HOME_REQUEST &&
+        controller->state == MOTION_STATE_HOMING) {
+
+        response.result = MOTION_RESULT_IGNORED;
+        response.reason = MOTION_REASON_ALREADY_IN_STATE;
+    }
+
+    return response;
+}
+
+const char *motion_event_name(motion_event_t event)
+{
+    switch (event) {
+    case MOTION_EVENT_INIT_OK: return "INIT_OK";
+    case MOTION_EVENT_INIT_FAILED: return "INIT_FAILED";
+    case MOTION_EVENT_UP_PRESSED: return "UP_PRESSED";
+    case MOTION_EVENT_DOWN_PRESSED: return "DOWN_PRESSED";
+    case MOTION_EVENT_BUTTON_RELEASED: return "BUTTON_RELEASED";
+    case MOTION_EVENT_MOVE_ABSOLUTE: return "MOVE_ABSOLUTE";
+    case MOTION_EVENT_HOME_REQUEST: return "HOME_REQUEST";
+    case MOTION_EVENT_STOP: return "STOP";
+    case MOTION_EVENT_TARGET_REACHED: return "TARGET_REACHED";
+    case MOTION_EVENT_MOTOR_STOPPED: return "MOTOR_STOPPED";
+    case MOTION_EVENT_HOMING_COMPLETE: return "HOMING_COMPLETE";
+    case MOTION_EVENT_FAULT: return "FAULT";
+    case MOTION_EVENT_FAULT_RESET: return "FAULT_RESET";
+    default: return "UNKNOWN_EVENT";
+    }
+}
+
+const char *motion_action_name(motion_action_t action)
+{
+    switch (action) {
+    case MOTION_ACTION_NONE: return "NONE";
+    case MOTION_ACTION_MOVE_UP: return "MOVE_UP";
+    case MOTION_ACTION_MOVE_DOWN: return "MOVE_DOWN";
+    case MOTION_ACTION_MOVE_ABSOLUTE: return "MOVE_ABSOLUTE";
+    case MOTION_ACTION_START_HOMING: return "START_HOMING";
+    case MOTION_ACTION_DECELERATE: return "DECELERATE";
+    case MOTION_ACTION_STOPPED: return "STOPPED";
+    case MOTION_ACTION_FAULT: return "FAULT";
+    default: return "UNKNOWN_ACTION";
+    }
+}
+
+const char *motion_reason_name(motion_reason_t reason)
+{
+    switch (reason) {
+    case MOTION_REASON_NONE: return "NONE";
+    case MOTION_REASON_INVALID_STATE: return "Invalid state";
+    case MOTION_REASON_NOT_HOMED: return "Position not referenced";
+    case MOTION_REASON_ALREADY_IN_STATE: return "Already in requested state";
+    default: return "Unknown reason";
+    }
+}
