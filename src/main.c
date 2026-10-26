@@ -1,19 +1,14 @@
+
 #include "FreeRTOS.h"
 #include "task.h"
 
 #include "console.h"
+#include "console_commands.h"
 #include "led.h"
+#include "motion_controller.h"
 
 #include <stdint.h>
 
-/*
- * Step pulses for the HBS86H belong on a 16-bit timer ISR (Timer1, 3, 4 or
- * 5 on the Mega). The RTOS tick is only the housekeeping clock.
- *
- * On the ATmega2560 the port stores a 16-bit start address for each task and
- * forces the third program-counter byte to 0, so task functions stay in the
- * low 128 KiB via .lowtext.
- */
 #if defined(__AVR_3_BYTE_PC__)
 #define LOWTEXT __attribute__((section(".lowtext")))
 #else
@@ -23,25 +18,69 @@
 #define HEARTBEAT_STACK_BYTES 320U
 #define HEARTBEAT_PRIORITY    (tskIDLE_PRIORITY + 1U)
 
-static void LOWTEXT heartbeat_task(void *parameters);
+#define CONSOLE_STACK_BYTES   512U
+#define CONSOLE_PRIORITY      (tskIDLE_PRIORITY + 2U)
+
+static motion_controller_t controller;
+static console_commands_t commands;
 
 static void LOWTEXT heartbeat_task(void *parameters)
 {
     TickType_t last_wake;
-    uint16_t beat = 0U;
 
     (void)parameters;
     last_wake = xTaskGetTickCount();
 
     for (;;) {
         led_toggle();
-        beat++;
-        console_write("heartbeat ");
-        console_write_u16(beat);
-        console_write(" stack ");
-        console_write_u16((uint16_t)uxTaskGetStackHighWaterMark2(NULL));
-        console_write("\n");
-        vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(500));
+
+        vTaskDelayUntil(
+            &last_wake,
+            pdMS_TO_TICKS(500)
+        );
+    }
+}
+
+static void LOWTEXT console_task(void *parameters)
+{
+    char character;
+
+    (void)parameters;
+
+    motion_controller_init(&controller);
+    console_commands_init(&commands, &controller);
+
+    console_write("\nMotion controller console\n");
+
+    /*
+     * Simulate successful hardware initialization.
+     * No physical outputs are enabled.
+     */
+    motion_message_t init_message = {
+        .type = MOTION_EVENT_INIT_OK,
+        .value = 0
+    };
+
+    (void)motion_controller_process(
+        &controller, init_message
+    );
+
+    console_commands_print_help();
+    console_write("\n> ");
+
+    for (;;) {
+        while (console_read_char(&character)) {
+            console_commands_process_char(
+                &commands, character
+            );
+
+            if (character == '\r' ||
+                character == '\n') {
+                console_write("> ");
+            }
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
 
@@ -49,20 +88,35 @@ int main(void)
 {
     led_init();
     console_init();
-    console_write("stepper-interface " BOARD_NAME "\n");
 
-    if (xTaskCreate(heartbeat_task,
-                    "beat",
-                    HEARTBEAT_STACK_BYTES,
-                    NULL,
-                    HEARTBEAT_PRIORITY,
-                    NULL) != pdPASS) {
-        vAssertCalled(__FILE__, __LINE__);
-    }
+    console_write(
+        "stepper-interface " BOARD_NAME "\n"
+    );
+
+    configASSERT(
+        xTaskCreate(
+            heartbeat_task,
+            "beat",
+            HEARTBEAT_STACK_BYTES,
+            NULL,
+            HEARTBEAT_PRIORITY,
+            NULL
+        ) == pdPASS
+    );
+
+    configASSERT(
+        xTaskCreate(
+            console_task,
+            "console",
+            CONSOLE_STACK_BYTES,
+            NULL,
+            CONSOLE_PRIORITY,
+            NULL
+        ) == pdPASS
+    );
 
     vTaskStartScheduler();
 
-    /* The scheduler only returns if the idle task could not be created. */
     vAssertCalled(__FILE__, __LINE__);
     return 0;
 }
