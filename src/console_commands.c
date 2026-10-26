@@ -205,37 +205,60 @@ static void execute_command(console_commands_t *console)
     }
 }
 
+
 void console_commands_process_char(
     console_commands_t *console,
     char character)
 {
     if (character == '\r' || character == '\n') {
+
+        /* Echo Enter as a newline. */
+        console_write("\n");
+
         if (console->length != 0U) {
             console->line[console->length] = '\0';
+
             execute_command(console);
+
             console->length = 0U;
             console->line[0] = '\0';
         }
+
+        //console_write("> ");
         return;
     }
 
+    /* Backspace (ASCII 8) or Delete (ASCII 127). */
     if (character == '\b' || character == 127) {
         if (console->length != 0U) {
             --console->length;
+            console->line[console->length] = '\0';
+
+            /* Move left, erase character, move left again. */
+            console_write("\b \b");
         }
         return;
     }
 
+    /* Ignore non-printable ASCII characters. */
     if (character < 32 || character > 126) {
         return;
     }
 
+    /* Protect command buffer against overflow. */
     if (console->length >= CONSOLE_COMMAND_MAX_LENGTH - 1U) {
         console->length = 0U;
         console->line[0] = '\0';
-        console_write("Command too long\n");
+
+        console_write("\nCommand too long\n> ");
         return;
     }
 
+    /* Append character to the existing command buffer. */
     console->line[console->length++] = character;
+    console->line[console->length] = '\0';
+
+    /* Echo the accepted character. */
+    char echo[2] = { character, '\0' };
+    console_write(echo);
 }
