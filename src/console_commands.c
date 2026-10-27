@@ -1,7 +1,10 @@
 
 #include "console_commands.h"
 #include "console.h"
+#include "motion_limits.h"
 
+#include <errno.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -38,21 +41,46 @@ static bool parse_i32(const char *text, int32_t *result)
     char *end;
     long value;
 
-    if (*text == '\0') {
+    if (text == NULL || result == NULL || *text == '\0') {
         return false;
     }
 
+    errno = 0;
     value = strtol(text, &end, 10);
 
-    if (*end != '\0') {
+    if (end == text || *end != '\0' || errno == ERANGE ||
+        value < INT32_MIN || value > INT32_MAX) {
         return false;
     }
 
-    /* AVR-GCC uses a 32-bit long. */
     *result = (int32_t)value;
     return true;
 }
 
+static bool mm_to_steps(int32_t mm, int32_t *steps)
+{
+    if (steps == NULL) {
+        return false;
+    }
+
+    /* check physical range before multiplication */
+    if (mm < MOTION_TRAVEL_MIN_MM ||
+        mm > MOTION_TRAVEL_MAX_MM) {
+        return false;
+    }
+
+    if (MOTION_STEPS_PER_MM <= 0L) {
+        return false;
+    }
+
+    /* avoid int32 overflow */
+    if (mm > INT32_MAX / MOTION_STEPS_PER_MM) {
+        return false;
+    }
+
+    *steps = mm * MOTION_STEPS_PER_MM;
+    return true;
+}
 
 static void send_event(
     console_commands_t *console,
@@ -187,12 +215,24 @@ static void execute_command(console_commands_t *console)
         send_event(console, MOTION_EVENT_HOMING_COMPLETE, 0);
 
     } else if (strncmp(line, "move ", 5U) == 0) {
-        if (parse_i32(line + 5, &value)) {
+        int32_t steps;
+    
+        if (!parse_i32(line + 5, &value)) {
+            console_write("Invalid millimetre value\n");
+    
+        } else if (!mm_to_steps(value, &steps)) {
+            console_write("Position outside 0-370 mm or invalid scaling\n");
+    
+        } else {
+            send_event(console, MOTION_EVENT_MOVE_ABSOLUTE, steps);
+        }
+    
+    } else if (strncmp(line, "movesteps ", 10U) == 0) {
+        if (parse_i32(line + 10, &value)) {
             send_event(console, MOTION_EVENT_MOVE_ABSOLUTE, value);
         } else {
-            console_write("Invalid position\n");
+            console_write("Invalid step position\n");
         }
-
     } else if (strcmp(line, "up") == 0) {
         send_event(console, MOTION_EVENT_UP_PRESSED, 0);
 
