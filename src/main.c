@@ -7,6 +7,9 @@
 #include "led.h"
 #include "motion_controller.h"
 
+#include "twi.h"
+#include "lcd_hd44780.h"
+
 #include <stdint.h>
 
 #if defined(__AVR_3_BYTE_PC__)
@@ -88,6 +91,35 @@ int main(void)
 {
     led_init();
     console_init();
+
+    twi_init();
+
+    twi_result_t lcd_result = lcd_init();
+    
+    if (lcd_result == TWI_OK) {
+    
+        lcd_goto(0, 0);
+        lcd_write("PALLET CUTTER");
+    
+        lcd_goto(1, 0);
+        lcd_write("ATmega2560");
+    
+        lcd_goto(2, 0);
+        lcd_write("FreeRTOS READY");
+    
+        lcd_goto(3, 0);
+        lcd_write("LCD TEST OK");
+    
+        console_write("LCD initialized\n");
+    
+    } else {
+    
+        console_write("LCD initialization failed\n");
+        console_write("TWI error: ");
+        console_write_u16((uint16_t)lcd_result);
+        console_write("\n");
+    }
+    
 
     console_write(
         "stepper-interface " BOARD_NAME "\n"
