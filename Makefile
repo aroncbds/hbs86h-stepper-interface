@@ -51,7 +51,8 @@ APP_SRC := \
 	src/hooks.c \
 	src/motion_controller.c \
 	src/twi.c \
-	src/lcd_hd44780.c
+	src/lcd_hd44780.c \
+	src/lcd_ui.c
 	
 
 # Bare-metal LED blink. Separate image so it does not pull in FreeRTOS.
