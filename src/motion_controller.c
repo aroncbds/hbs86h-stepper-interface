@@ -1,5 +1,5 @@
-
 #include "motion_controller.h"
+#include "motion_limits.h"
 
 #include <stddef.h>
 
@@ -80,10 +80,19 @@ motion_command_t motion_controller_process(
 
         if (message.type == MOTION_EVENT_MOVE_ABSOLUTE &&
             controller->position_valid) {
-
+        
+            /*
+             * Reject absolute movements outside the configured travel limits.
+             *
+             * do not change target_steps or state when the target is invalid..
+             */
+            if (!motion_target_in_range(message.value)) {
+                return command(MOTION_ACTION_NONE, 0);
+            }
+        
             controller->target_steps = message.value;
             set_state(controller, MOTION_STATE_AUTO);
-
+        
             return command(
                 MOTION_ACTION_MOVE_ABSOLUTE,
                 message.value
@@ -203,20 +212,25 @@ motion_response_t motion_controller_process_ex(
     response.previous_state = controller->state;
 
     /*
-     * Existing state machine remains the single authority
-     * for transitions and commands.
+     * existing state machine remains the single authority for transitions and commands
      */
     response.command =
         motion_controller_process(controller, message);
 
     response.current_state = controller->state;
 
+    /*
+     * An action or state transition means the event was accepted by the state machine
+     */
     if (response.command.type != MOTION_ACTION_NONE ||
         response.previous_state != response.current_state) {
 
         response.result = MOTION_RESULT_ACCEPTED;
         response.reason = MOTION_REASON_NONE;
 
+    /*
+     * Absolute positioning requires a valid reference
+     */
     } else if (
         message.type == MOTION_EVENT_MOVE_ABSOLUTE &&
         !controller->position_valid) {
@@ -224,6 +238,26 @@ motion_response_t motion_controller_process_ex(
         response.result = MOTION_RESULT_REJECTED;
         response.reason = MOTION_REASON_NOT_HOMED;
 
+    /*
+     * Reject absolute targets outside the configured
+     * travel limits.
+     *
+     * This applies only when the state machine would
+     * otherwise allow absolute positioning.
+     */
+    } else if (
+        message.type == MOTION_EVENT_MOVE_ABSOLUTE &&
+        controller->position_valid &&
+        (controller->state == MOTION_STATE_IDLE ||
+         controller->state == MOTION_STATE_NOT_HOMED) &&
+        !motion_target_in_range(message.value)) {
+
+        response.result = MOTION_RESULT_REJECTED;
+        response.reason = MOTION_REASON_OUT_OF_RANGE;
+
+    /*
+     * INIT_OK has already been processed
+     */
     } else if (
         message.type == MOTION_EVENT_INIT_OK &&
         controller->state == MOTION_STATE_NOT_HOMED) {
@@ -231,6 +265,9 @@ motion_response_t motion_controller_process_ex(
         response.result = MOTION_RESULT_IGNORED;
         response.reason = MOTION_REASON_ALREADY_IN_STATE;
 
+    /*
+     * Homing is already in progress
+     */
     } else if (
         message.type == MOTION_EVENT_HOME_REQUEST &&
         controller->state == MOTION_STATE_HOMING) {
@@ -280,10 +317,22 @@ const char *motion_action_name(motion_action_t action)
 const char *motion_reason_name(motion_reason_t reason)
 {
     switch (reason) {
-    case MOTION_REASON_NONE: return "NONE";
-    case MOTION_REASON_INVALID_STATE: return "Invalid state";
-    case MOTION_REASON_NOT_HOMED: return "Position not referenced";
-    case MOTION_REASON_ALREADY_IN_STATE: return "Already in requested state";
-    default: return "Unknown reason";
+    case MOTION_REASON_NONE:
+        return "NONE";
+
+    case MOTION_REASON_INVALID_STATE:
+        return "Invalid state";
+
+    case MOTION_REASON_NOT_HOMED:
+        return "Position not referenced";
+
+    case MOTION_REASON_ALREADY_IN_STATE:
+        return "Already in requested state";
+
+    case MOTION_REASON_OUT_OF_RANGE:
+        return "Target outside travel limits";
+
+    default:
+        return "Unknown reason";
     }
 }
