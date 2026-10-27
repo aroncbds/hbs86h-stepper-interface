@@ -165,6 +165,7 @@ void console_commands_init(
     console->line[0] = '\0';
 }
 
+
 static void execute_command(console_commands_t *console)
 {
     char *line = console->line;
@@ -172,38 +173,55 @@ static void execute_command(console_commands_t *console)
 
     if (strcmp(line, "help") == 0) {
         console_commands_print_help();
+
     } else if (strcmp(line, "status") == 0) {
         print_status(console->controller);
+
     } else if (strcmp(line, "init") == 0) {
         send_event(console, MOTION_EVENT_INIT_OK, 0);
+
     } else if (strcmp(line, "home") == 0) {
         send_event(console, MOTION_EVENT_HOME_REQUEST, 0);
+
     } else if (strcmp(line, "homed") == 0) {
         send_event(console, MOTION_EVENT_HOMING_COMPLETE, 0);
+
     } else if (strncmp(line, "move ", 5U) == 0) {
         if (parse_i32(line + 5, &value)) {
             send_event(console, MOTION_EVENT_MOVE_ABSOLUTE, value);
         } else {
             console_write("Invalid position\n");
         }
+
     } else if (strcmp(line, "up") == 0) {
         send_event(console, MOTION_EVENT_UP_PRESSED, 0);
+
     } else if (strcmp(line, "down") == 0) {
         send_event(console, MOTION_EVENT_DOWN_PRESSED, 0);
+
     } else if (strcmp(line, "release") == 0) {
         send_event(console, MOTION_EVENT_BUTTON_RELEASED, 0);
+
     } else if (strcmp(line, "stop") == 0) {
         send_event(console, MOTION_EVENT_STOP, 0);
+
+    } else if (strcmp(line, "reached") == 0) {
+        send_event(console, MOTION_EVENT_TARGET_REACHED, 0);
+
     } else if (strcmp(line, "stopped") == 0) {
         send_event(console, MOTION_EVENT_MOTOR_STOPPED, 0);
+
     } else if (strcmp(line, "fault") == 0) {
         send_event(console, MOTION_EVENT_FAULT, 0);
+
     } else if (strcmp(line, "reset") == 0) {
         send_event(console, MOTION_EVENT_FAULT_RESET, 0);
+
     } else if (*line != '\0') {
         console_write("Unknown command. Type help\n");
     }
 }
+
 
 
 void console_commands_process_char(
