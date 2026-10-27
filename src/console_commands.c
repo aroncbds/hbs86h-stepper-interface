@@ -250,7 +250,7 @@ void console_commands_process_char(
         console->length = 0U;
         console->line[0] = '\0';
 
-        console_write("\nCommand too long\n> ");
+        console_write("\nCommand too long\n");
         return;
     }
 
