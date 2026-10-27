@@ -1,6 +1,7 @@
 
 #include "lcd_ui.h"
 #include "lcd_hd44780.h"
+#include "motion_limits.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -65,45 +66,61 @@ static void append_i32(
     }
 }
 
-static void build_lines(
-    char lines[UI_ROWS][UI_COLS],
-    const lcd_ui_snapshot_t *snapshot)
+static void build_lines(char lines[UI_ROWS][UI_COLS], const lcd_ui_snapshot_t *snapshot)
 {
     uint8_t row;
     uint8_t col;
+    int32_t target_value;
+    const char *target_unit;
 
+    /* Clear all four display lines. */
     for (row = 0U; row < UI_ROWS; ++row) {
         clear_line(lines[row]);
     }
 
+    /* Row 0: Controller state. */
     col = 0U;
     append_text(lines[0], &col, "STATE: ");
     append_text(lines[0], &col, snapshot->state);
 
+    /* Row 1: Current position in steps. */
     col = 0U;
     append_text(lines[1], &col, "POS: ");
 
     if (snapshot->position_valid) {
         append_i32(
-            lines[1], &col,
+            lines[1],
+            &col,
             snapshot->position_steps
         );
+        append_text(lines[1], &col, " st");
     } else {
         append_text(lines[1], &col, "UNKNOWN");
     }
 
+    /* Row 2: Target in the requested unit. */
     col = 0U;
     append_text(lines[2], &col, "TARGET: ");
 
     if (snapshot->position_valid) {
-        append_i32(
-            lines[2], &col,
-            snapshot->target_steps
-        );
+
+        target_value = snapshot->target_steps;
+        target_unit = " st";
+
+        if (snapshot->target_unit == LCD_TARGET_UNIT_MM) {
+            target_value =
+                snapshot->target_steps / MOTION_STEPS_PER_MM;
+            target_unit = " mm";
+        }
+
+        append_i32(lines[2], &col, target_value);
+        append_text(lines[2], &col, target_unit);
+
     } else {
         append_text(lines[2], &col, "UNKNOWN");
     }
 
+    /* Row 3: Controller status. */
     col = 0U;
     append_text(lines[3], &col, "STATUS: ");
     append_text(lines[3], &col, snapshot->status);

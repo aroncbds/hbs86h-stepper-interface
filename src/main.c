@@ -41,42 +41,45 @@ static uint8_t lcd_available = 0U;
  *
  * No additional controller instance is created.
  */
-static void lcd_update_controller(void)
-{
+
+ static void lcd_update_controller(void)
+ {
     lcd_ui_snapshot_t snapshot;
-
-    snapshot.state =
-        motion_controller_state_name(controller.state);
-
-    snapshot.position_steps =
-        controller.position_steps;
-
-    snapshot.target_steps =
-        controller.target_steps;
-
-    snapshot.position_valid =
-        controller.position_valid ? 1U : 0U;
-
-    if (controller.state == MOTION_STATE_FAULT) {
-        snapshot.status = "FAULT";
-    } else if (controller.state == MOTION_STATE_HOMING) {
-        snapshot.status = "HOMING";
-    } else if (controller.state == MOTION_STATE_DECELERATING) {
-        snapshot.status = "STOPPING";
-    } else if (controller.state == MOTION_STATE_NOT_HOMED) {
-        snapshot.status = "HOME REQUIRED";
-    } else if (controller.state == MOTION_STATE_IDLE) {
-        snapshot.status = "READY";
-    } else if (controller.state == MOTION_STATE_MANUAL) {
-        snapshot.status = "MANUAL";
-    } else if (controller.state == MOTION_STATE_AUTO) {
-        snapshot.status = "AUTO";
-    } else {
-        snapshot.status = "INITIALIZING";
-    }
-
-    (void)lcd_ui_update(&snapshot);
-}
+ 
+    snapshot.state = motion_controller_state_name(controller.state);
+    snapshot.position_steps = controller.position_steps;
+    snapshot.target_steps = controller.target_steps;
+    snapshot.position_valid = controller.position_valid ? 1U : 0U;
+    snapshot.target_unit = commands.target_unit;
+ 
+     if (controller.state == MOTION_STATE_FAULT) {
+         snapshot.status = "FAULT";
+ 
+     } else if (controller.state == MOTION_STATE_HOMING) {
+         snapshot.status = "HOMING";
+ 
+     } else if (controller.state == MOTION_STATE_DECELERATING) {
+         snapshot.status = "STOPPING";
+ 
+     } else if (controller.state == MOTION_STATE_NOT_HOMED) {
+         snapshot.status = "HOME NEEDED";
+ 
+     } else if (controller.state == MOTION_STATE_IDLE) {
+         snapshot.status = "READY";
+ 
+     } else if (controller.state == MOTION_STATE_MANUAL) {
+         snapshot.status = "MANUAL";
+ 
+     } else if (controller.state == MOTION_STATE_AUTO) {
+         snapshot.status = "AUTO";
+ 
+     } else {
+         snapshot.status = "INITIALIZING";
+     }
+ 
+     (void)lcd_ui_update(&snapshot);
+ }
+ 
 
 static void LOWTEXT heartbeat_task(void *parameters)
 {

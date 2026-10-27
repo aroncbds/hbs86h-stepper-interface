@@ -188,6 +188,7 @@ void console_commands_init(
     console_commands_t *console,
     motion_controller_t *controller)
 {
+    console->target_unit = LCD_TARGET_UNIT_STEPS;
     console->controller = controller;
     console->length = 0U;
     console->line[0] = '\0';
@@ -216,23 +217,58 @@ static void execute_command(console_commands_t *console)
 
     } else if (strncmp(line, "move ", 5U) == 0) {
         int32_t steps;
-    
+
         if (!parse_i32(line + 5, &value)) {
             console_write("Invalid millimetre value\n");
-    
+
         } else if (!mm_to_steps(value, &steps)) {
-            console_write("Position outside 0-370 mm or invalid scaling\n");
-    
+            console_write(
+                "Position outside 0-370 mm or invalid scaling\n"
+            );
+
         } else {
-            send_event(console, MOTION_EVENT_MOVE_ABSOLUTE, steps);
+            motion_state_t before = console->controller->state;
+
+            send_event(
+                console,
+                MOTION_EVENT_MOVE_ABSOLUTE,
+                steps
+            );
+
+            /*
+             * only update the LCD presentation unit if the movement was accepted
+             */
+            if (before != MOTION_STATE_AUTO &&
+                console->controller->state == MOTION_STATE_AUTO) {
+
+                console->target_unit = LCD_TARGET_UNIT_MM;
+            }
         }
-    
+
     } else if (strncmp(line, "movesteps ", 10U) == 0) {
+
         if (parse_i32(line + 10, &value)) {
-            send_event(console, MOTION_EVENT_MOVE_ABSOLUTE, value);
+            motion_state_t before = console->controller->state;
+
+            send_event(
+                console,
+                MOTION_EVENT_MOVE_ABSOLUTE,
+                value
+            );
+
+            /*
+             * only update the LCD presentation unit if the movement was accepted
+             */
+            if (before != MOTION_STATE_AUTO &&
+                console->controller->state == MOTION_STATE_AUTO) {
+
+                console->target_unit = LCD_TARGET_UNIT_STEPS;
+            }
+
         } else {
             console_write("Invalid step position\n");
         }
+
     } else if (strcmp(line, "up") == 0) {
         send_event(console, MOTION_EVENT_UP_PRESSED, 0);
 
@@ -261,8 +297,6 @@ static void execute_command(console_commands_t *console)
         console_write("Unknown command. Type help\n");
     }
 }
-
-
 
 void console_commands_process_char(
     console_commands_t *console,

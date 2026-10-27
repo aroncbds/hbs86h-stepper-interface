@@ -3,6 +3,7 @@
 #define CONSOLE_COMMANDS_H
 
 #include "motion_controller.h"
+#include "lcd_ui.h"
 
 #include <stdint.h>
 
@@ -12,6 +13,7 @@ typedef struct {
     motion_controller_t *controller;
     char line[CONSOLE_COMMAND_MAX_LENGTH];
     uint8_t length;
+    lcd_target_unit_t target_unit;
 } console_commands_t;
 
 void console_commands_init(
