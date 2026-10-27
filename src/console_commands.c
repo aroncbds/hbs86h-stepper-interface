@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -163,8 +164,11 @@ static void print_status(const motion_controller_t *controller)
     console_write("\n");
 }
 
+
 void console_commands_print_help(void)
 {
+    char limits[64];
+
     console_write(
         "\n"
         "PALLET CUTTER - SERVICE CONSOLE\n"
@@ -194,7 +198,19 @@ void console_commands_print_help(void)
         "  reset           Reset controller fault\n"
         "\n"
         "POSITION LIMITS\n"
-        "  Travel range: 0 - 370 mm\n"
+    );
+
+    snprintf(
+        limits,
+        sizeof(limits),
+        "  Travel range: %ld - %ld mm\n",
+        (long)MOTION_TRAVEL_MIN_MM,
+        (long)MOTION_TRAVEL_MAX_MM
+    );
+
+    console_write(limits);
+
+    console_write(
         "  move uses millimetres\n"
         "  movesteps uses STEP pulses\n"
         "\n"
@@ -202,6 +218,7 @@ void console_commands_print_help(void)
         "\n"
     );
 }
+
 
 void console_commands_init(
     console_commands_t *console,
@@ -241,9 +258,16 @@ static void execute_command(console_commands_t *console)
             console_write("Invalid millimetre value\n");
 
         } else if (!mm_to_steps(value, &steps)) {
-            console_write(
-                "Position outside 0-370 mm or invalid scaling\n"
+            char message[80];
+
+            snprintf(
+                message,
+                sizeof(message),
+                "Position outside %ld-%ld mm or invalid scaling\n",
+                (long)MOTION_TRAVEL_MIN_MM,
+                (long)MOTION_TRAVEL_MAX_MM
             );
+            console_write(message);
 
         } else {
             motion_state_t before = console->controller->state;
