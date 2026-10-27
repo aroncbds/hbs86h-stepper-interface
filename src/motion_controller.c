@@ -118,6 +118,9 @@ motion_command_t motion_controller_process(
         }
 
         if (message.type == MOTION_EVENT_TARGET_REACHED) {
+            /* let the "reached" event update the position to the target value for a more realistic simulation until we get the motor connected */
+            controller->position_steps = controller->target_steps;
+
             set_state(controller, MOTION_STATE_DECELERATING);
             return command(MOTION_ACTION_DECELERATE, 0);
         }
