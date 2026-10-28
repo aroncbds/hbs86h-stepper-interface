@@ -13,7 +13,7 @@
  */
 
 /* Physical travel limits, in millimetres */
-#define MOTION_TRAVEL_MIN_MM      120L
+#define MOTION_TRAVEL_MIN_MM      110L
 #define MOTION_TRAVEL_MAX_MM      370L
 
 /*
