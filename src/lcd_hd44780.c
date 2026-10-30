@@ -10,16 +10,12 @@
 
 static twi_result_t lcd_expander_write(uint8_t value)
 {
-    return twi_write(
-        LCD_I2C_ADDRESS,
-        (uint8_t)(value | LCD_BL)
-    );
+    return twi_write(LCD_I2C_ADDRESS, (uint8_t)(value | LCD_BL));
 }
 
 static twi_result_t lcd_nibble(uint8_t nibble, uint8_t rs)
 {
-    uint8_t value =
-        (uint8_t)((nibble & 0x0FU) << 4);
+    uint8_t value = (uint8_t)((nibble & 0x0FU) << 4);
 
     twi_result_t result;
 
@@ -110,7 +106,6 @@ twi_result_t lcd_write(const char *text)
 
         ++text;
     }
-
     return TWI_OK;
 }
 
